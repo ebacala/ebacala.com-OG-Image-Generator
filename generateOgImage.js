@@ -1,81 +1,47 @@
-const puppeteer = require("puppeteer");
-const fs = require("fs");
-const path = require("path");
+import puppeteer from "puppeteer";
+import fs from "fs";
+import path from "path";
 
-// Parse command line arguments with flags
-function parseArguments() {
-  const args = process.argv.slice(2);
-
-  let tag = null;
-  let title = null;
-  let author = null;
-  let picturePath = null;
-
-  for (let i = 0; i < args.length; i++) {
-    switch (args[i]) {
-      case "--tag":
-        tag = args[++i];
-        break;
-      case "--title":
-        title = args[++i];
-        break;
-      case "--author":
-        author = args[++i];
-        break;
-      case "--picture":
-        picturePath = args[++i];
-        break;
-      case "--help":
-      case "-h":
-        console.log(
-          "Usage: node generateOgImage.js --tag <tag> --title <title> --author <author> --picture <picture file path>"
-        );
-        console.log(
-          "Example: node generateOgImage.js --tag 'Blog' --title 'How I fixed Apple Photos dates?' --author 'Evann BACALA' --picture '~/picture.png'"
-        );
-        console.log("\nFlags:");
-        console.log("  --tag       The tag/category for the image");
-        console.log("  --title     The title text for the image");
-        console.log("  --author    The author name for the image");
-        console.log("  --picture   The path of the picture for the image");
-        console.log("  --help, -h  Show this help message");
-        process.exit(0);
-        break;
-      default:
-        console.error(`Unknown argument: ${args[i]}`);
-        console.error("Use --help for usage information");
-        process.exit(1);
-    }
+export async function generateOgImage(data) {
+  const { title, tag, author, picturePath } = data;
+  // Validate required data fields
+  if (!tag) {
+    throw new Error("Tag is required");
   }
 
-  if (!tag || !title || !author || !picturePath) {
-    console.error("Error: All four arguments (--tag, --title, --author, --picture) are required");
-    console.error("Use --help for usage information");
-    process.exit(1);
+  if (!title) {
+    throw new Error("Title is required");
   }
 
-  return { tag, title, author, picturePath };
-}
+  if (!author) {
+    throw new Error("Author is required");
+  }
 
-async function generateOGImage(data) {
+  if (!picturePath) {
+    throw new Error("Picture path is required");
+  }
+
   // Validate picture file
-  if (!fs.existsSync(data.picturePath)) {
-    throw new Error(`Picture file does not exist: ${data.picturePath}`);
+  if (!fs.existsSync(picturePath)) {
+    throw new Error(`Picture file does not exist: ${picturePath}`);
   }
 
-  const ext = path.extname(data.picturePath).toLowerCase();
-  const validExtensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg"];
+  // Validate picture file extension
+  const pictureFileExtension = path.extname(picturePath).toLowerCase();
+  const validPictureExtensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg"];
 
-  if (!validExtensions.includes(ext)) {
+  if (!validPictureExtensions.includes(pictureFileExtension)) {
     throw new Error(
-      `Invalid image file format. Supported formats: ${validExtensions.join(", ")}`
+      `Invalid image file format. Supported formats: ${validPictureExtensions.join(", ")}`
     );
   }
 
   // Convert picture to base64
-  const pictureBuffer = fs.readFileSync(data.picturePath);
+  const pictureBuffer = fs.readFileSync(picturePath);
   const pictureBase64 = pictureBuffer.toString("base64");
-  const mimeType = `image/${ext.slice(1) === "jpg" ? "jpeg" : ext.slice(1)}`;
+  const mimeType = `image/${
+    pictureFileExtension.slice(1) === "jpg" ? "jpeg" : pictureFileExtension.slice(1)
+  }`;
   const pictureDataUrl = `data:${mimeType};base64,${pictureBase64}`;
 
   const browser = await puppeteer.launch();
@@ -164,11 +130,11 @@ async function generateOGImage(data) {
     </style>
   </head>
   <body>
-    <div class="tag">${data.tag}</div>
-    <div class="title">${data.title}</div>
+    <div class="tag">${tag}</div>
+    <div class="title">${title}</div>
     <div class="author">
       <div class="profile-pic"></div>
-      <div class="author-name">${data.author}</div>
+      <div class="author-name">${author}</div>
     </div>
   </body>
 </html>
@@ -181,26 +147,4 @@ async function generateOGImage(data) {
   return screenshot;
 }
 
-// Check if this file is being run directly or imported as a module
-if (require.main === module) {
-  // Running directly with Node.js - parse arguments and generate image
-  try {
-    const data = parseArguments();
-    
-    generateOGImage(data)
-      .then((screenshot) => {
-        fs.writeFileSync("og-image.png", screenshot);
-        console.log("OG image generated successfully as 'og-image.png'");
-      })
-      .catch((error) => {
-        console.error("Error generating OG image:", error);
-        process.exit(1);
-      });
-  } catch (error) {
-    console.error("Error:", error.message);
-    process.exit(1);
-  }
-} else {
-  // Imported as a module - export the generateOGImage function
-  module.exports = { generateOGImage };
-}
+export default generateOgImage;
