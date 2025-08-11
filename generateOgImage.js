@@ -28,10 +28,10 @@ function parseArguments() {
       case "--help":
       case "-h":
         console.log(
-          "Usage: node main.js --tag <tag> --title <title> --author <author> --picture <picture file path>"
+          "Usage: node generateOgImage.js --tag <tag> --title <title> --author <author> --picture <picture file path>"
         );
         console.log(
-          "Example: node main.js --tag 'Blog' --title 'How I fixed Apple Photos dates?' --author 'Evann BACALA' --picture '~/picture.png'"
+          "Example: node generateOgImage.js --tag 'Blog' --title 'How I fixed Apple Photos dates?' --author 'Evann BACALA' --picture '~/picture.png'"
         );
         console.log("\nFlags:");
         console.log("  --tag       The tag/category for the image");
@@ -60,19 +60,16 @@ function parseArguments() {
 async function generateOGImage(data) {
   // Validate picture file
   if (!fs.existsSync(data.picturePath)) {
-    console.error(`Error: Picture file does not exist: ${data.picturePath}`);
-    process.exit(1);
+    throw new Error(`Picture file does not exist: ${data.picturePath}`);
   }
 
   const ext = path.extname(data.picturePath).toLowerCase();
   const validExtensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg"];
 
   if (!validExtensions.includes(ext)) {
-    console.error(
-      `Error: Invalid image file format. Supported formats: ${validExtensions.join(", ")}`
+    throw new Error(
+      `Invalid image file format. Supported formats: ${validExtensions.join(", ")}`
     );
-    console.error(`Provided file: ${data.picturePath}`);
-    process.exit(1);
   }
 
   // Convert picture to base64
@@ -184,15 +181,26 @@ async function generateOGImage(data) {
   return screenshot;
 }
 
-// Get data from command line arguments
-const data = parseArguments();
-
-generateOGImage(data)
-  .then((screenshot) => {
-    fs.writeFileSync("og-image.png", screenshot);
-    console.log("OG image generated successfully as 'og-image.png'");
-  })
-  .catch((error) => {
-    console.error("Error generating OG image:", error);
+// Check if this file is being run directly or imported as a module
+if (require.main === module) {
+  // Running directly with Node.js - parse arguments and generate image
+  try {
+    const data = parseArguments();
+    
+    generateOGImage(data)
+      .then((screenshot) => {
+        fs.writeFileSync("og-image.png", screenshot);
+        console.log("OG image generated successfully as 'og-image.png'");
+      })
+      .catch((error) => {
+        console.error("Error generating OG image:", error);
+        process.exit(1);
+      });
+  } catch (error) {
+    console.error("Error:", error.message);
     process.exit(1);
-  });
+  }
+} else {
+  // Imported as a module - export the generateOGImage function
+  module.exports = { generateOGImage };
+}
