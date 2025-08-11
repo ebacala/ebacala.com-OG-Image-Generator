@@ -1,0 +1,14 @@
+{
+  "name": "ebacala.com - OG Image Generator",
+  "version": "1.0.0",
+  "description": "Simple tool to generate the OG images for ebacala.com",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^24.16.1"
+  }
+}
